@@ -1,4 +1,5 @@
-  <!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -349,9 +350,9 @@ input:focus, select:focus { border-color: var(--blue); background: white; }
           <select id="f-waters">
             <optgroup label="St. Johns River System">
               <option value="St. Johns River" selected>St. Johns River</option>
-              <option>St. Johns River u2014 Palatka</option>
-              <option>St. Johns River u2014 Jacksonville</option>
-              <option>St. Johns River u2014 Sanford</option>
+              <option>St. Johns River — Palatka</option>
+              <option>St. Johns River — Jacksonville</option>
+              <option>St. Johns River — Sanford</option>
               <option>Dunns Creek</option>
               <option>Ocklawaha River</option>
               <option>Lake George</option>
@@ -363,7 +364,7 @@ input:focus, select:focus { border-color: var(--blue); background: white; }
               <option>Rice Creek</option>
             </optgroup>
             <optgroup label="NE Florida Coastal">
-              <option>Intracoastal Waterway u2014 FL</option>
+              <option>Intracoastal Waterway — FL</option>
               <option>Nassau Sound</option>
               <option>St. Marys River</option>
               <option>Matanzas River</option>
@@ -481,7 +482,7 @@ let entries = [];
 let activeTrip = null; // {startTime, startDate}
 let elapsedTimer = null;
 
-const INLAND = new Set(['St. Johns River','St. Johns River u2014 Palatka','St. Johns River u2014 Jacksonville','St. Johns River u2014 Sanford','Dunns Creek','Ocklawaha River','Lake George','Lake Monroe','Lake Harney','Lake Jesup','Lake Beresford','Crescent Lake','Rice Creek','Intracoastal Waterway u2014 FL','Nassau Sound','St. Marys River','Matanzas River','Halifax River','Tolomato River','Western Rivers','Mississippi River System','Great Lakes','Inland (other)']);
+const INLAND = new Set(['St. Johns River','St. Johns River — Palatka','St. Johns River — Jacksonville','St. Johns River — Sanford','Dunns Creek','Ocklawaha River','Lake George','Lake Monroe','Lake Harney','Lake Jesup','Lake Beresford','Crescent Lake','Rice Creek','Intracoastal Waterway — FL','Nassau Sound','St. Marys River','Matanzas River','Halifax River','Tolomato River','Western Rivers','Mississippi River System','Great Lakes','Inland (other)']);
 
 function today() { return new Date().toISOString().slice(0,10); }
 function nowTime() { return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
