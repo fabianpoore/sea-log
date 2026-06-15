@@ -207,7 +207,7 @@ input:focus, select:focus { border-color: var(--blue); background: white; }
 .btn-del {
   position: absolute; top: 8px; right: 10px;
   background: none; border: none;
-  font-size: 18px; color: var(--mist); cursor: pointer; line-height: 1;
+  font-size: 16px; color: var(--ink); cursor: pointer; line-height: 1;
   padding: 2px 4px;
 }
 
@@ -612,7 +612,7 @@ function renderHistory() {
     const tags = (e.types||[]).map(t => `<span class="tag ${t}">${t}</span>`).join('');
     const dateStr = fmt(e.dateFrom) + (e.dateTo && e.dateTo !== e.dateFrom ? ' → '+fmt(e.dateTo) : '');
     return `<div class="entry ${cls}">
-      <button class="btn-del" onclick="delEntry(${e.id})">×</button>
+      <button class="btn-del" onclick="delEntry(${e.id})">🗑️</button>
       <div class="entry-top">
         <div class="entry-vessel">${e.vessel||'—'}</div>
         <div class="entry-hrs">${e.hours} hrs</div>
@@ -818,4 +818,3 @@ self.addEventListener('fetch', e => {
 </script>
 </body>
 </html>
-
