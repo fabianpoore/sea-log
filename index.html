@@ -186,7 +186,6 @@ input:focus, select:focus { border-color: var(--blue); background: white; }
   border: 1px solid var(--mist);
   border-left-width: 4px;
   padding: 11px 12px; margin-bottom: 8px;
-  position: relative;
 }
 .entry.tow { border-left-color: var(--tow); }
 .entry.watch { border-left-color: var(--green); }
@@ -205,9 +204,11 @@ input:focus, select:focus { border-color: var(--blue); background: white; }
 .tag.operator { background: #f3eeff; color: #6b3fa0; }
 .tag.watchstanding { background: #e8fdf4; color: var(--green); }
 .btn-del {
-  position: absolute; top: 8px; right: 10px;
+  display: block;
+  margin-top: 8px;
+  margin-left: auto;
   background: none; border: none;
-  font-size: 16px; color: var(--ink); cursor: pointer; line-height: 1;
+  font-size: 16px; color: #aaa; cursor: pointer;
   padding: 2px 4px;
 }
 
