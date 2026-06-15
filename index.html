@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sea Log">
+<meta name="theme-color" content="#1a3a52">
+<title>Sea Log</title>
+
+<!-- PWA Manifest inline as data URI so single-file works -->
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Sea+Service+Log%22%2C%22short_name%22%3A%22Sea+Log%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a3a52%22%2C%22theme_color%22%3A%22%231a3a52%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg+xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527+viewBox%3D%25270+0+192+192%2527%253E%253Crect+width%3D%2527192%2527+height%3D%2527192%2527+rx%3D%252740%2527+fill%3D%2527%25231a3a52%2527%2F%253E%253Ctext+y%3D%2527130%2527+x%3D%252796%2527+text-anchor%3D%2527middle%2527+font-size%3D%2527110%2527%253E%25E2%259A%25" rel="noopener">
+
+<!-- Apple touch icon generated via canvas -->
+<link rel="apple-touch-icon" id="apple-icon">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --navy: #1a3a52;
+  --blue: #2e6b9e;
+  --sky: #7ab8d9;
+  --steel: #8fa3b1;
+  --mist: #ddeaf3;
+  --hull: #f5f8fa;
+  --white: #ffffff;
+  --ink: #0f1923;
+  --tow: #c45c2a;
+  --green: #2a7a5a;
+  --safe: env(safe-area-inset-bottom, 0px);
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--navy); }
+
+#app {
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100dvh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--hull);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Header ── */
+.hdr {
+  background: var(--navy);
+  color: white;
+  padding: 14px 16px 10px;
+  padding-top: max(14px, env(safe-area-inset-top, 14px));
+  flex-shrink: 0;
+}
+.hdr-row { display: flex; justify-content: space-between; align-items: center; }
+.hdr-eyebrow { font-size: 9px; letter-spacing: 2px; color: var(--sky); text-transform: uppercase; margin-bottom: 2px; }
+.hdr-title { font-size: 17px; font-weight: 700; }
+.hdr-total { text-align: right; }
+.hdr-hrs { font-family: monospace; font-size: 22px; font-weight: 700; color: var(--sky); line-height: 1; }
+.hdr-days { font-size: 10px; color: var(--steel); }
+
+/* ── Stats bar ── */
+.stats-bar {
+  background: var(--navy);
+  display: flex;
+  border-bottom: 2px solid var(--blue);
+  flex-shrink: 0;
+}
+.stat { flex: 1; text-align: center; padding: 7px 2px; }
+.stat-val { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--sky); }
+.stat-val.done { color: #4ecb94; }
+.stat-lbl { font-size: 9px; color: var(--steel); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px; }
+
+/* ── Tabs ── */
+.tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--mist); flex-shrink: 0; }
+.tab {
+  flex: 1; padding: 11px 4px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  font-size: 12px; font-weight: 600; color: var(--steel);
+  cursor: pointer;
+}
+.tab.on { color: var(--navy); border-bottom-color: var(--navy); }
+
+/* ── Scroll area ── */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px;
+  padding-bottom: calc(14px + var(--safe));
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--white);
+  border-radius: 10px;
+  border: 1px solid var(--mist);
+  padding: 13px;
+  margin-bottom: 11px;
+}
+.card-title {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--steel); margin-bottom: 10px;
+}
+
+/* ── Active trip banner ── */
+.active-banner {
+  background: #fff8e8;
+  border: 1px solid #f0d080;
+  border-radius: 10px;
+  padding: 12px 13px;
+  margin-bottom: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.active-banner-left { font-size: 12px; color: #7a5a10; }
+.active-banner-time { font-family: monospace; font-size: 20px; font-weight: 700; color: #c45c2a; }
+.btn-end {
+  background: var(--navy); color: white;
+  border: none; border-radius: 7px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+/* ── Grid helpers ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.g21 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+/* ── Form fields ── */
+label.lbl {
+  display: block; font-size: 10px; font-weight: 600;
+  color: var(--steel); letter-spacing: 0.8px;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+input, select {
+  width: 100%; padding: 9px 10px;
+  border: 1.5px solid var(--mist); border-radius: 7px;
+  font-size: 15px; background: var(--hull);
+  font-family: inherit; color: var(--ink);
+  outline: none; -webkit-appearance: none; appearance: none;
+}
+input:focus, select:focus { border-color: var(--blue); background: white; }
+.vessel-note { font-size: 10px; color: var(--steel); margin-top: 3px; }
+
+/* ── Type chips ── */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--mist);
+  background: var(--hull); color: var(--steel);
+  cursor: pointer; transition: all .1s;
+}
+.chip.on { border-color: var(--blue); background: #e8f4fb; color: var(--navy); }
+.chip.on.tow { border-color: var(--tow); background: #fdf0e8; color: var(--tow); }
+
+/* ── Buttons ── */
+.btn-save {
+  width: 100%; padding: 14px;
+  background: var(--navy); color: white;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  margin-top: 2px;
+}
+.btn-start {
+  width: 100%; padding: 14px;
+  background: var(--tow); color: white;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  margin-top: 2px;
+}
+.btn-export {
+  width: 100%; padding: 12px;
+  background: none; border: 2px solid var(--navy);
+  color: var(--navy); border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  margin-top: 4px;
+}
+
+/* ── History entries ── */
+.entry {
+  background: white; border-radius: 8px;
+  border: 1px solid var(--mist);
+  border-left-width: 4px;
+  padding: 11px 12px; margin-bottom: 8px;
+  position: relative;
+}
+.entry.tow { border-left-color: var(--tow); }
+.entry.watch { border-left-color: var(--green); }
+.entry.deck { border-left-color: var(--blue); }
+.entry-top { display: flex; justify-content: space-between; align-items: baseline; }
+.entry-vessel { font-size: 14px; font-weight: 700; color: var(--ink); }
+.entry-hrs { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--blue); }
+.entry-meta { font-size: 11px; color: var(--steel); margin-top: 3px; line-height: 1.5; }
+.entry-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+.tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+}
+.tag.deck { background: #e8f4fb; color: var(--blue); }
+.tag.towing { background: #fdf0e8; color: var(--tow); }
+.tag.operator { background: #f3eeff; color: #6b3fa0; }
+.tag.watchstanding { background: #e8fdf4; color: var(--green); }
+.btn-del {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none;
+  font-size: 18px; color: var(--mist); cursor: pointer; line-height: 1;
+  padding: 2px 4px;
+}
+
+/* ── Summary ── */
+.req-row { padding: 10px 0; border-bottom: 1px solid #eef2f5; }
+.req-row:last-child { border-bottom: none; }
+.req-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+.req-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.req-sub { font-size: 11px; color: var(--steel); margin-top: 1px; }
+.req-val { font-family: monospace; font-size: 13px; font-weight: 700; color: var(--blue); }
+.req-val.done { color: var(--green); }
+.prog-bar { background: #e8eef3; border-radius: 3px; height: 5px; overflow: hidden; margin-top: 5px; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width .4s; }
+.prog-fill.done { background: var(--green); }
+.prog-fill.tow { background: var(--tow); }
+
+.tow-alert {
+  background: #fdf0e8; border: 1px solid #e8c4a0;
+  border-radius: 8px; padding: 11px 13px; margin-bottom: 11px;
+  font-size: 12px; color: #7a3a10; line-height: 1.5;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: calc(28px + var(--safe));
+  left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--ink); color: white;
+  padding: 9px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all .2s;
+  pointer-events: none; white-space: nowrap; z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty { text-align: center; padding: 48px 20px; color: var(--steel); font-size: 13px; line-height: 1.6; }
+
+/* ── Install banner ── */
+.install-bar {
+  background: #e8f4fb; border-bottom: 1px solid var(--mist);
+  padding: 9px 14px; font-size: 12px; color: var(--navy);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.install-bar button {
+  background: var(--navy); color: white;
+  border: none; border-radius: 5px;
+  padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.install-bar .dismiss { background: none; color: var(--steel); padding: 5px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div>
+        <div class="hdr-eyebrow">USCG Sea Service Log</div>
+        <div class="hdr-title">Master Inland · 25/50 GRT</div>
+      </div>
+      <div class="hdr-total">
+        <div class="hdr-hrs" id="hdr-hrs">0 hrs</div>
+        <div class="hdr-days" id="hdr-days">0 days</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar">
+    <!-- filled by JS -->
+  </div>
+
+  <div id="install-bar" class="install-bar" style="display:none">
+    <span>📲 Add to Home Screen for offline use</span>
+    <div style="display:flex;gap:6px">
+      <button onclick="triggerInstall()">Install</button>
+      <button class="dismiss" onclick="dismissInstall()">✕</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('log',this)">Log</button>
+    <button class="tab" onclick="switchTab('history',this)">History</button>
+    <button class="tab" onclick="switchTab('summary',this)">Summary</button>
+  </div>
+
+  <!-- LOG TAB -->
+  <div id="tab-log" class="scroll">
+
+    <!-- Active trip banner -->
+    <div id="active-banner" class="active-banner" style="display:none">
+      <div class="active-banner-left">
+        <div style="font-weight:700;margin-bottom:2px">Trip in progress</div>
+        <div id="active-start-label"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="active-banner-time" id="active-elapsed">0:00</div>
+        <button class="btn-end" onclick="endTrip()">End trip</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Trip</div>
+      <div class="g2">
+        <div>
+          <label class="lbl">Date from</label>
+          <input type="date" id="f-dateFrom">
+        </div>
+        <div>
+          <label class="lbl">Date to</label>
+          <input type="date" id="f-dateTo">
+        </div>
+        <div>
+          <label class="lbl">Hours underway</label>
+          <input type="number" id="f-hours" min="0.5" step="0.5" placeholder="8">
+        </div>
+        <div>
+          <label class="lbl">Days</label>
+          <input type="number" id="f-days" min="1" step="1" placeholder="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Vessel</div>
+      <div class="g21" style="margin-bottom:10px">
+        <div>
+          <label class="lbl">Name</label>
+          <input type="text" id="f-vessel" value="Motion Marine Jet Boat">
+          <div class="vessel-note">Merx Jet 240 · Inboard Jet</div>
+        </div>
+        <div>
+          <label class="lbl">GRT</label>
+          <input type="number" id="f-grt" value="22">
+        </div>
+      </div>
+      <div class="g2">
+        <div>
+          <label class="lbl">Waters</label>
+          <select id="f-waters">
+            <option value="St. Johns River" selected>St. Johns River</option>
+            <option>Western Rivers</option>
+            <option>Mississippi River System</option>
+            <option>Columbia River</option>
+            <option>Lake Washington / Puget Sound</option>
+            <option>Great Lakes</option>
+            <option>Inland (other)</option>
+            <option>Near Coastal</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Your role</label>
+          <select id="f-capacity">
+            <option value="Master" selected>Master</option>
+            <option>Mate</option>
+            <option>Operator</option>
+            <option>Deckhand</option>
+            <option>Engineer</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Service type</div>
+      <div class="chips">
+        <div class="chip" data-type="deck" onclick="toggleChip(this)">Deck</div>
+        <div class="chip tow" data-type="towing" onclick="toggleChip(this)">Towing</div>
+        <div class="chip" data-type="operator" onclick="toggleChip(this)">Operator</div>
+        <div class="chip" data-type="watchstanding" onclick="toggleChip(this)">Watch</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Supervisor</div>
+      <div class="g2">
+        <div>
+          <label class="lbl">Name</label>
+          <input type="text" id="f-supervisor" placeholder="Full name">
+        </div>
+        <div>
+          <label class="lbl">License #</label>
+          <input type="text" id="f-supLicense" placeholder="USCG #">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="startTrip()">▶ Start trip now</button>
+    <div style="height:8px"></div>
+    <button class="btn-save" onclick="saveManual()">Save manually</button>
+    <div style="height:28px"></div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="scroll" style="display:none">
+    <div id="history-list"></div>
+  </div>
+
+  <!-- SUMMARY TAB -->
+  <div id="tab-summary" class="scroll" style="display:none">
+    <div id="summary-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── IndexedDB ──────────────────────────────────────────────────────────────
+const DB = 'seaLog', VER = 1, ST = 'entries';
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB, VER);
+    r.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(ST)) {
+        db.createObjectStore(ST, {keyPath:'id'}).createIndex('dateFrom','dateFrom');
+      }
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function dbAll() {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const r = db.transaction(ST,'readonly').objectStore(ST).index('dateFrom').getAll();
+    r.onsuccess = () => res([...r.result].reverse());
+    r.onerror = () => rej(r.error);
+  });
+}
+async function dbPut(e) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(ST,'readwrite');
+    tx.objectStore(ST).put(e);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function dbDel(id) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(ST,'readwrite');
+    tx.objectStore(ST).delete(id);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let entries = [];
+let activeTrip = null; // {startTime, startDate}
+let elapsedTimer = null;
+
+const INLAND = new Set(['St. Johns River','Western Rivers','Mississippi River System',
+  'Columbia River','Lake Washington / Puget Sound','Great Lakes','Inland (other)']);
+
+function today() { return new Date().toISOString().slice(0,10); }
+function nowTime() { return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function fmt(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${m}/${day}/${y.slice(2)}`;
+}
+function hhmm(ms) {
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+  return `${h}:${String(m).padStart(2,'0')}`;
+}
+function pct(v,mx) { return Math.min(100, Math.round(v/mx*100)); }
+
+function calcTotals(entries) {
+  let totalHrs=0, totalDays=0, towingHrs=0, towingDays=0,
+      watchHrs=0, deckHrs=0, opHrs=0, inlandHrs=0;
+  for (const e of entries) {
+    const h = parseFloat(e.hours)||0, d = parseInt(e.days)||1;
+    totalHrs += h; totalDays += d;
+    if (INLAND.has(e.waters)) inlandHrs += h;
+    if (e.types?.includes('towing'))       { towingHrs += h; towingDays += d; }
+    if (e.types?.includes('watchstanding')) watchHrs += h;
+    if (e.types?.includes('deck'))          deckHrs += h;
+    if (e.types?.includes('operator'))      opHrs += h;
+  }
+  return {totalHrs,totalDays,towingHrs,towingDays,watchHrs,deckHrs,opHrs,inlandHrs};
+}
+
+// ── Active trip (timer) ────────────────────────────────────────────────────
+function startTrip() {
+  if (activeTrip) { toast('Trip already running'); return; }
+  activeTrip = { startTime: Date.now(), startDate: today(), startClock: nowTime() };
+  localStorage.setItem('activeTrip', JSON.stringify(activeTrip));
+  showActiveBanner();
+  // pre-fill date from
+  document.getElementById('f-dateFrom').value = activeTrip.startDate;
+  toast('Trip started — ' + activeTrip.startClock);
+}
+
+function endTrip() {
+  if (!activeTrip) return;
+  const elapsed = Date.now() - activeTrip.startTime;
+  const hrs = Math.round(elapsed / 1800000) / 2; // round to nearest 0.5
+  document.getElementById('f-dateTo').value = today();
+  document.getElementById('f-hours').value = Math.max(0.5, hrs);
+  const days = today() !== activeTrip.startDate ? 2 : 1;
+  document.getElementById('f-days').value = days;
+  clearInterval(elapsedTimer);
+  document.getElementById('active-banner').style.display = 'none';
+  activeTrip = null;
+  localStorage.removeItem('activeTrip');
+  toast('Fill in details and save');
+}
+
+function showActiveBanner() {
+  if (!activeTrip) return;
+  const banner = document.getElementById('active-banner');
+  banner.style.display = 'flex';
+  document.getElementById('active-start-label').textContent = 'Started ' + activeTrip.startClock;
+  clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(() => {
+    document.getElementById('active-elapsed').textContent = hhmm(Date.now() - activeTrip.startTime);
+  }, 10000);
+  document.getElementById('active-elapsed').textContent = hhmm(Date.now() - activeTrip.startTime);
+}
+
+// ── Form helpers ───────────────────────────────────────────────────────────
+function getTypes() {
+  return [...document.querySelectorAll('.chip.on')].map(c => c.dataset.type);
+}
+function toggleChip(el) { el.classList.toggle('on'); }
+
+function getForm() {
+  return {
+    dateFrom: document.getElementById('f-dateFrom').value || today(),
+    dateTo:   document.getElementById('f-dateTo').value || today(),
+    hours:    parseFloat(document.getElementById('f-hours').value) || 0,
+    days:     parseInt(document.getElementById('f-days').value) || 1,
+    vessel:   document.getElementById('f-vessel').value.trim(),
+    grt:      document.getElementById('f-grt').value,
+    waters:   document.getElementById('f-waters').value,
+    capacity: document.getElementById('f-capacity').value,
+    supervisor:  document.getElementById('f-supervisor').value.trim(),
+    supLicense:  document.getElementById('f-supLicense').value.trim(),
+    types:    getTypes(),
+  };
+}
+
+function resetDates() {
+  document.getElementById('f-dateFrom').value = today();
+  document.getElementById('f-dateTo').value = today();
+  document.getElementById('f-hours').value = '';
+  document.getElementById('f-days').value = '1';
+}
+
+async function saveManual() {
+  const f = getForm();
+  if (!f.vessel) { toast('Enter vessel name'); return; }
+  if (!f.hours)  { toast('Enter hours'); return; }
+  const entry = { ...f, id: Date.now() };
+  await dbPut(entry);
+  entries = await dbAll();
+  updateHeader();
+  resetDates();
+  toast('Logged ' + f.hours + ' hrs');
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  ['log','history','summary'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  if (name === 'history') renderHistory();
+  if (name === 'summary') renderSummary();
+}
+
+// ── Header & stats ─────────────────────────────────────────────────────────
+function updateHeader() {
+  const t = calcTotals(entries);
+  document.getElementById('hdr-hrs').textContent = t.totalHrs + ' hrs';
+  document.getElementById('hdr-days').textContent = t.totalDays + ' days';
+
+  const bars = [
+    { val: t.totalHrs,   max: 720,  label: '25 GRT' },
+    { val: t.totalHrs,   max: 1080, label: '50 GRT' },
+    { val: t.towingDays, max: 90,   label: 'Tow End.' },
+    { val: t.watchHrs,   max: 360,  label: 'Watch' },
+  ];
+  document.getElementById('stats-bar').innerHTML = bars.map(b => {
+    const p = pct(b.val, b.max);
+    return `<div class="stat">
+      <div class="stat-val ${p>=100?'done':''}">${p}%</div>
+      <div class="stat-lbl">${b.label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── History ────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty">No trips yet.<br>Log your first entry.</div>';
+    return;
+  }
+  el.innerHTML = entries.map(e => {
+    const cls = e.types?.includes('towing') ? 'tow' : e.types?.includes('watchstanding') ? 'watch' : 'deck';
+    const tags = (e.types||[]).map(t => `<span class="tag ${t}">${t}</span>`).join('');
+    const dateStr = fmt(e.dateFrom) + (e.dateTo && e.dateTo !== e.dateFrom ? ' → '+fmt(e.dateTo) : '');
+    return `<div class="entry ${cls}">
+      <button class="btn-del" onclick="delEntry(${e.id})">×</button>
+      <div class="entry-top">
+        <div class="entry-vessel">${e.vessel||'—'}</div>
+        <div class="entry-hrs">${e.hours} hrs</div>
+      </div>
+      <div class="entry-meta">
+        ${dateStr} · ${e.days} day${e.days!==1?'s':''}
+        ${e.waters ? ' · '+e.waters : ''}
+        ${e.capacity ? ' · '+e.capacity : ''}
+      </div>
+      ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
+      ${e.supervisor ? `<div class="entry-meta" style="margin-top:4px">✓ ${e.supervisor}${e.supLicense?' · '+e.supLicense:''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function delEntry(id) {
+  await dbDel(id);
+  entries = await dbAll();
+  updateHeader();
+  renderHistory();
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function reqRow(label, sub, val, max, unit='hrs', tow=false) {
+  const p = pct(val, max), done = val >= max;
+  return `<div class="req-row">
+    <div class="req-row-top">
+      <div>
+        <div class="req-name">${label}</div>
+        ${sub ? `<div class="req-sub">${sub}</div>` : ''}
+      </div>
+      <div class="req-val ${done?'done':''}">${val}/${max} ${unit}</div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill ${done?'done':tow?'tow':''}" style="width:${p}%"></div></div>
+  </div>`;
+}
+
+function renderSummary() {
+  const t = calcTotals(entries);
+  let html = '';
+
+  if (t.towingDays < 90) {
+    html += `<div class="tow-alert">
+      <strong>Towing Endorsement (46 CFR 10.467):</strong> ${90-t.towingDays} more days of towing service needed.
+      Select <em>Towing</em> when logging to track.
+    </div>`;
+  }
+
+  html += `<div class="card">
+    <div class="card-title">Master 25 GRT Inland</div>
+    ${reqRow('Total hours','720 hrs minimum',t.totalHrs,720)}
+    ${reqRow('Days underway','360 days minimum',t.totalDays,360,'days')}
+    ${reqRow('Inland waters','Must be Inland routes',t.inlandHrs,720)}
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title">Master 50 GRT Upgrade</div>
+    ${reqRow('Total hours','1,080 hrs (3 yrs)',t.totalHrs,1080)}
+    ${reqRow('Days underway','720 days',t.totalDays,720,'days')}
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title">Towing Vessel Operator Endorsement</div>
+    ${reqRow('Towing days','90 days · 46 CFR 10.467',t.towingDays,90,'days',true)}
+    ${reqRow('Towing hours','',t.towingHrs,360,'hrs',true)}
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title">Breakdown</div>
+    ${[['Deck',t.deckHrs],['Towing',t.towingHrs],['Operator',t.opHrs],['Watchstanding',t.watchHrs]]
+      .map(([l,v]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef2f5">
+        <span style="font-size:13px">${l}</span>
+        <span style="font-family:monospace;font-size:13px;font-weight:700;color:var(--blue)">${v} hrs</span>
+      </div>`).join('')}
+  </div>`;
+
+  html += `<button class="btn-export" onclick="exportCSV()">Export CSV — CG-719K format</button>`;
+  html += `<div style="height:28px"></div>`;
+
+  document.getElementById('summary-content').innerHTML = html;
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!entries.length) { toast('Nothing to export'); return; }
+  const hdr = ['Date From','Date To','Days','Hours','Vessel','GRT','Waters','Capacity','Types','Supervisor','Sup License'];
+  const rows = entries.map(e => [
+    e.dateFrom, e.dateTo, e.days, e.hours,
+    `"${e.vessel}"`, e.grt, `"${e.waters}"`, e.capacity,
+    `"${(e.types||[]).join('; ')}"`,
+    `"${e.supervisor||''}"`, e.supLicense||''
+  ].join(','));
+  const blob = new Blob([[hdr.join(','),...rows].join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sea_service_log.csv';
+  a.click();
+  toast('Exported');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── PWA Install ────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('installDismissed')) {
+    document.getElementById('install-bar').style.display = 'flex';
+  }
+});
+function triggerInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('install-bar').style.display = 'none';
+    });
+  } else {
+    // iOS fallback
+    toast('Tap Share → Add to Home Screen');
+  }
+}
+function dismissInstall() {
+  localStorage.setItem('installDismissed','1');
+  document.getElementById('install-bar').style.display = 'none';
+}
+
+// Generate apple-touch-icon via canvas
+(function() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 180;
+  const ctx = c.getContext('2d');
+  const r = 40;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(180-r, 0);
+  ctx.quadraticCurveTo(180, 0, 180, r);
+  ctx.lineTo(180, 180-r); ctx.quadraticCurveTo(180, 180, 180-r, 180);
+  ctx.lineTo(r, 180); ctx.quadraticCurveTo(0, 180, 0, 180-r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#1a3a52'; ctx.fill();
+  ctx.font = '100px serif'; ctx.textAlign = 'center';
+  ctx.fillText('⚓', 90, 130);
+  document.getElementById('apple-icon').href = c.toDataURL();
+})();
+
+// ── Service Worker ─────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'sea-log-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/sea-service-log.html'])).catch(()=>{}));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
+});
+`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+  // Set default dates
+  document.getElementById('f-dateFrom').value = today();
+  document.getElementById('f-dateTo').value = today();
+
+  // Load entries
+  try { entries = await dbAll(); } catch(e) { entries = []; }
+  updateHeader();
+
+  // Restore active trip if app was closed mid-trip
+  const saved = localStorage.getItem('activeTrip');
+  if (saved) {
+    try {
+      activeTrip = JSON.parse(saved);
+      document.getElementById('f-dateFrom').value = activeTrip.startDate;
+      showActiveBanner();
+    } catch(e) { localStorage.removeItem('activeTrip'); }
+  }
+
+  // iOS install hint (no beforeinstallprompt on Safari)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  if (isIOS && !isStandalone && !localStorage.getItem('installDismissed')) {
+    document.getElementById('install-bar').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>
